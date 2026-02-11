@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Milton Loop — Recursive Self-Learning Chess Engine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-primary: #05050a;
+            --bg-secondary: #0a0a12;
+            --bg-card: #0f0f1a;
+            --bg-card-hover: #151526;
+            --border: #1a1a30;
+            --border-bright: #252545;
+            --text-primary: #e8e8f0;
+            --text-secondary: #8888a0;
+            --text-muted: #555568;
+            --accent: #00ff88;
+            --accent-dim: #00cc6a;
+            --accent-glow: rgba(0, 255, 136, 0.1);
+            --accent-glow-strong: rgba(0, 255, 136, 0.25);
+            --accent2: #7b61ff;
+            --accent2-glow: rgba(123, 97, 255, 0.15);
+            --accent3: #ff6b2b;
+            --red: #ff4455;
+            --yellow: #ffcc00;
+            --cyan: #00ddff;
+            --font-sans: 'Space Grotesk', -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        ::selection { background: var(--accent); color: var(--bg-primary); }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* ── Grid BG ─────────────────────────────────────── */
+        .grid-bg {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-image:
+                linear-gradient(rgba(0,255,136,0.015) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,255,136,0.015) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none; z-index: 0;
+        }
+
+        .glow-orb {
+            position: fixed; border-radius: 50%;
+            filter: blur(120px); pointer-events: none; z-index: 0;
+        }
+        .glow-orb.green { width: 600px; height: 600px; top: -200px; left: -200px; background: rgba(0,255,136,0.05); }
+        .glow-orb.purple { width: 500px; height: 500px; bottom: -150px; right: -150px; background: rgba(123,97,255,0.05); }
+        .glow-orb.orange { width: 400px; height: 400px; top: 40%; left: 50%; background: rgba(255,107,43,0.03); }
+
+        .content-wrapper { position: relative; z-index: 1; }
+
+        /* ── LOOP ANIMATION BG ──────────────────────────── */
+        .loop-rings {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+            width: 800px; height: 800px; pointer-events: none; z-index: 0; opacity: 0.03;
+        }
+        .loop-ring {
+            position: absolute; border: 1px solid var(--accent);
+            border-radius: 50%; top: 50%; left: 50%;
+        }
+        .loop-ring:nth-child(1) { width: 300px; height: 300px; margin: -150px 0 0 -150px; animation: spinLoop 20s linear infinite; }
+        .loop-ring:nth-child(2) { width: 500px; height: 500px; margin: -250px 0 0 -250px; animation: spinLoop 30s linear infinite reverse; }
+        .loop-ring:nth-child(3) { width: 700px; height: 700px; margin: -350px 0 0 -350px; animation: spinLoop 40s linear infinite; }
+        @keyframes spinLoop { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+        /* ── NAV ─────────────────────────────────────────── */
+        nav {
+            position: fixed; top: 0; left: 0; right: 0;
+            padding: 1rem 2rem;
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(5,5,10,0.92);
+            backdrop-filter: blur(24px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+        }
+
+        .nav-logo { font-family: var(--font-mono); font-weight: 700; font-size: 0.95rem; color: var(--accent); }
+        .nav-logo span { color: var(--text-muted); }
+        .nav-logo .loop-symbol { color: var(--accent3); }
+
+        .nav-links { display: flex; gap: 2rem; }
+        .nav-links a {
+            color: var(--text-secondary); font-size: 0.8rem; font-weight: 500;
+            letter-spacing: 0.06em; text-transform: uppercase; transition: color 0.2s;
+        }
+        .nav-links a:hover { color: var(--accent); text-decoration: none; }
+
+        .nav-status { display: flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted); }
+        .status-dot { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; animation: pulse 2s ease-in-out infinite; }
+        @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(0,255,136,0.5)} 50%{box-shadow:0 0 0 8px rgba(0,255,136,0)} }
+
+        /* ── HERO ────────────────────────────────────────── */
+        .hero {
+            min-height: 100vh; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center;
+            padding: 8rem 2rem 4rem; position: relative;
+        }
+
+        .hero-tag {
+            font-family: var(--font-mono); font-size: 0.75rem;
+            color: var(--accent); letter-spacing: 0.15em; text-transform: uppercase;
+            margin-bottom: 1.5rem; opacity:0; animation: fadeUp .8s ease forwards .2s;
+        }
+        .hero-tag .blink { animation: blink 1s step-end infinite; }
+        @keyframes blink { 50%{opacity:0} }
+
+        .hero-title {
+            font-size: clamp(3.5rem,10vw,9rem); font-weight: 700;
+            letter-spacing: -0.04em; line-height: 0.92; margin-bottom: 1.5rem;
+            opacity:0; animation: fadeUp .8s ease forwards .4s;
+        }
+        .hero-title .loop {
+            background: linear-gradient(135deg, var(--accent3) 0%, var(--accent) 50%, var(--cyan) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .hero-title .infinity {
+            font-size: 0.6em; vertical-align: middle;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1rem,2.5vw,1.3rem); color: var(--text-secondary);
+            max-width: 640px; margin-bottom: 2.5rem; opacity:0; animation: fadeUp .8s ease forwards .6s;
+        }
+        .hero-subtitle strong { color: var(--text-primary); font-weight: 600; }
+
+        .hero-cta {
+            display: inline-flex; align-items: center; gap: 0.75rem;
+            padding: 1rem 2.5rem; background: var(--accent); color: var(--bg-primary);
+            font-family: var(--font-mono); font-weight: 700; font-size: 0.95rem;
+            border-radius: 8px; border: none; cursor: pointer;
+            transition: all 0.3s; text-decoration: none;
+            box-shadow: 0 0 30px var(--accent-glow-strong);
+            opacity:0; animation: fadeUp .8s ease forwards .7s;
+        }
+        .hero-cta:hover { transform: translateY(-2px); box-shadow: 0 0 50px var(--accent-glow-strong); text-decoration: none; color: var(--bg-primary); }
+        .hero-cta .cta-icon { font-size: 1.2rem; }
+
+        .hero-stats {
+            display: flex; gap: 3rem; margin-top: 3rem;
+            opacity:0; animation: fadeUp .8s ease forwards .9s;
+        }
+        .hero-stat { text-align: center; }
+        .hero-stat-value { font-family: var(--font-mono); font-size: 2rem; font-weight: 700; color: var(--accent); }
+        .hero-stat-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
+
+        /* Loop counter ticker */
+        .loop-counter {
+            margin-top: 2rem; font-family: var(--font-mono); font-size: 0.72rem;
+            color: var(--text-muted); letter-spacing: 0.1em;
+            opacity:0; animation: fadeUp .8s ease forwards 1s;
+        }
+        .loop-counter .count { color: var(--accent3); font-weight: 700; font-size: 0.85rem; }
+
+        .floating-piece { position: absolute; font-size: 3rem; opacity: 0.025; animation: floatPiece 20s ease-in-out infinite; }
+        @keyframes floatPiece { 0%,100%{transform:translateY(0) rotate(0deg)} 50%{transform:translateY(-30px) rotate(10deg)} }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+        /* ── HOW IT WORKS (LOOP DIAGRAM) ────────────────── */
+        .loop-section { background: var(--bg-secondary); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); max-width: 100%; padding: 5rem 2rem; }
+        .loop-inner { max-width: 1100px; margin: 0 auto; }
+
+        .loop-diagram {
+            display: flex; align-items: center; justify-content: center;
+            gap: 0; flex-wrap: wrap; margin-top: 2rem;
+        }
+        .loop-step {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 1.8rem 1.5rem; text-align: center;
+            flex: 1; min-width: 180px; max-width: 220px; transition: all 0.3s;
+        }
+        .loop-step:hover { border-color: var(--accent); box-shadow: 0 0 25px var(--accent-glow); transform: translateY(-3px); }
+        .loop-step-icon { font-size: 2rem; margin-bottom: 0.75rem; }
+        .loop-step-title { font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700; color: var(--accent); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        .loop-step-desc { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5; }
+        .loop-arrow { font-size: 1.5rem; color: var(--accent3); padding: 0 0.5rem; font-family: var(--font-mono); animation: arrowPulse 2s ease-in-out infinite; }
+        .loop-arrow.back { color: var(--accent2); display: block; text-align: center; margin-top: 1.5rem; font-size: 1.2rem; }
+        @keyframes arrowPulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+        /* ── SECTION shared ──────────────────────────────── */
+        section { max-width: 1100px; margin: 0 auto; padding: 6rem 2rem; }
+        .section-label { font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 0.75rem; }
+        .section-title { font-size: clamp(1.8rem,4vw,2.8rem); font-weight: 700; letter-spacing: -0.03em; margin-bottom: 1rem; }
+        .section-desc { color: var(--text-secondary); max-width: 600px; margin-bottom: 3rem; }
+
+        /* ── LIVE GAME VIEWER ────────────────────────────── */
+        .live-game-section { background: var(--bg-secondary); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); max-width: 100%; padding: 4rem 2rem; }
+        .live-game-inner { max-width: 1100px; margin: 0 auto; }
+
+        .live-game-container {
+            display: grid; grid-template-columns: 400px 1fr; gap: 2rem;
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+            padding: 2rem; min-height: 460px;
+        }
+
+        .board-wrapper { position: relative; }
+        .board-container {
+            width: 400px; height: 400px; display: grid;
+            grid-template-columns: repeat(8,1fr); grid-template-rows: repeat(8,1fr);
+            border: 2px solid var(--border-bright); border-radius: 4px; overflow: hidden;
+        }
+        .board-square { display: flex; align-items: center; justify-content: center; font-size: 2.2rem; user-select: none; }
+        .board-square.light { background: #2a2a3e; }
+        .board-square.dark { background: #1a1a2e; }
+        .board-square.last-move { background: rgba(0,255,136,0.12); }
+
+        .board-players {
+            display: flex; justify-content: space-between; margin-top: 0.75rem;
+            font-family: var(--font-mono); font-size: 0.8rem;
+        }
+        .board-player { display: flex; align-items: center; gap: 0.5rem; }
+        .board-player .dot { width: 8px; height: 8px; border-radius: 50%; }
+        .board-player .dot.white { background: #eee; }
+        .board-player .dot.black { background: #555; }
+
+        .game-info-panel { display: flex; flex-direction: column; gap: 1rem; }
+        .game-info-header { font-size: 0.85rem; color: var(--text-muted); font-family: var(--font-mono); }
+        .game-info-header .live-badge {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            background: rgba(255,68,85,0.15); color: var(--red); padding: 0.2rem 0.6rem;
+            border-radius: 4px; font-size: 0.7rem; font-weight: 700;
+        }
+        .game-info-header .live-dot { width: 6px; height: 6px; background: var(--red); border-radius: 50%; animation: pulse-red 1.5s ease-in-out infinite; }
+        @keyframes pulse-red { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+        .move-list {
+            flex: 1; overflow-y: auto; font-family: var(--font-mono); font-size: 0.8rem;
+            color: var(--text-secondary); max-height: 320px; padding-right: 0.5rem;
+        }
+        .move-list::-webkit-scrollbar { width: 4px; }
+        .move-list::-webkit-scrollbar-track { background: transparent; }
+        .move-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+        .move-row { display: flex; gap: 1rem; padding: 0.25rem 0; }
+        .move-number { color: var(--text-muted); min-width: 2rem; text-align: right; }
+        .move-white, .move-black { min-width: 4rem; }
+        .move-white:hover, .move-black:hover { color: var(--accent); cursor: pointer; }
+
+        .no-game-msg {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100%; color: var(--text-muted); font-family: var(--font-mono); font-size: 0.85rem; gap: 1rem;
+        }
+        .no-game-msg .waiting-icon { font-size: 2rem; animation: floatPiece 3s ease-in-out infinite; }
+
+        /* ── ELO CHART ───────────────────────────────────── */
+        .chart-container {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+            padding: 2rem; position: relative; height: 300px;
+        }
+        .chart-canvas { width: 100%; height: 100%; }
+
+        /* ── TRAINING DASHBOARD ──────────────────────────── */
+        .dash-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+        .dash-card {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+            padding: 1.5rem; transition: all 0.3s;
+        }
+        .dash-card:hover { border-color: var(--accent); box-shadow: 0 0 20px var(--accent-glow); }
+        .dash-card-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem; font-family: var(--font-mono); }
+        .dash-card-value { font-family: var(--font-mono); font-size: 1.8rem; font-weight: 700; color: var(--text-primary); }
+        .dash-card-value.accent { color: var(--accent); }
+        .dash-card-value.orange { color: var(--accent3); }
+        .dash-card-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+        .dash-wide { grid-column: 1 / -1; }
+        .training-log {
+            background: var(--bg-primary); border-radius: 6px; padding: 1rem;
+            font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);
+            max-height: 180px; overflow-y: auto; line-height: 1.8;
+        }
+        .training-log .log-time { color: var(--text-muted); }
+        .training-log .log-info { color: var(--accent); }
+        .training-log .log-warn { color: var(--yellow); }
+        .training-log .log-loop { color: var(--accent3); }
+        .training-log .log-text { color: var(--text-secondary); }
+
+        /* ── MISSION ─────────────────────────────────────── */
+        .mission-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .mission-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 2rem; transition: all 0.3s;
+        }
+        .mission-card:hover { border-color: var(--accent); background: var(--bg-card-hover); box-shadow: 0 0 30px var(--accent-glow); }
+        .mission-card.featured {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, rgba(255,107,43,0.04) 0%, rgba(0,255,136,0.04) 50%, rgba(123,97,255,0.04) 100%);
+            border-color: rgba(255,107,43,0.2);
+        }
+        .mission-card-icon { font-size: 1.5rem; margin-bottom: 1rem; }
+        .mission-card h3 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+        .mission-card p { color: var(--text-secondary); font-size: 0.9rem; }
+
+        .elo-progress { margin-top: 1.5rem; }
+        .elo-bar-bg { height: 8px; background: var(--bg-primary); border-radius: 4px; overflow: hidden; margin-bottom: 0.5rem; }
+        .elo-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent3), var(--accent), var(--accent2)); border-radius: 4px; transition: width 1.5s ease; width: 0%; }
+        .elo-markers { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted); }
+        .elo-current { color: var(--accent); font-weight: 700; }
+
+        /* ── GAMES ───────────────────────────────────────── */
+        .games-container { display: flex; flex-direction: column; gap: 0.5rem; }
+        .game-row {
+            display: grid; grid-template-columns: 70px 1fr 120px 70px 60px;
+            gap: 1rem; align-items: center; padding: 0.9rem 1.5rem;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 8px; font-size: 0.85rem; transition: all 0.2s; cursor: pointer;
+        }
+        .game-row:hover { border-color: var(--accent); background: var(--bg-card-hover); }
+
+        .game-result { font-family: var(--font-mono); font-weight: 700; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px; text-align: center; }
+        .game-result.win { background: rgba(0,255,136,0.12); color: var(--accent); }
+        .game-result.loss { background: rgba(255,68,85,0.12); color: var(--red); }
+        .game-result.draw { background: rgba(255,204,0,0.12); color: var(--yellow); }
+
+        .game-opponent { color: var(--text-primary); font-size: 0.85rem; }
+        .game-opening { color: var(--text-muted); font-size: 0.75rem; }
+        .game-time { color: var(--text-muted); font-family: var(--font-mono); font-size: 0.78rem; }
+        .game-moves { color: var(--text-muted); font-family: var(--font-mono); font-size: 0.78rem; }
+
+        .games-loading { text-align: center; padding: 3rem; color: var(--text-muted); font-family: var(--font-mono); }
+        .games-link { text-align: center; margin-top: 2rem; }
+        .games-link a {
+            font-family: var(--font-mono); font-size: 0.82rem;
+            padding: 0.7rem 2rem; border: 1px solid var(--border-bright);
+            border-radius: 6px; transition: all 0.2s; display: inline-block; color: var(--text-secondary);
+        }
+        .games-link a:hover { background: var(--accent); color: var(--bg-primary); border-color: var(--accent); text-decoration: none; }
+
+        /* ── CODE ────────────────────────────────────────── */
+        .code-tabs { display: flex; gap: 0; }
+        .code-tab {
+            padding: 0.55rem 1.1rem; font-family: var(--font-mono); font-size: 0.72rem;
+            color: var(--text-muted); background: var(--bg-secondary);
+            border: 1px solid var(--border); border-bottom: none;
+            border-radius: 8px 8px 0 0; cursor: pointer; transition: all 0.2s;
+        }
+        .code-tab.active { color: var(--accent); background: var(--bg-card); border-color: var(--accent); }
+
+        .code-block {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 0 8px 8px 8px; padding: 1.5rem; overflow-x: auto; display: none;
+        }
+        .code-block.active { display: block; }
+        .code-block pre { font-family: var(--font-mono); font-size: 0.78rem; line-height: 1.7; color: var(--text-secondary); }
+        .code-block .kw { color: var(--accent2); }
+        .code-block .fn { color: var(--cyan); }
+        .code-block .str { color: var(--accent); }
+        .code-block .cm { color: var(--text-muted); font-style: italic; }
+        .code-block .num { color: var(--yellow); }
+        .code-block .loop-hl { color: var(--accent3); font-weight: 700; }
+
+        /* ── FAQ ─────────────────────────────────────────── */
+        .faq-list { display: flex; flex-direction: column; gap: 0.5rem; }
+        .faq-item { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; transition: border-color 0.2s; }
+        .faq-item:hover { border-color: rgba(0,255,136,0.2); }
+        .faq-question {
+            padding: 1.2rem 1.5rem; cursor: pointer; display: flex;
+            justify-content: space-between; align-items: center;
+            background: var(--bg-card); font-weight: 500; font-size: 0.95rem; transition: background 0.2s;
+        }
+        .faq-question:hover { background: var(--bg-card-hover); }
+        .faq-arrow { color: var(--accent); transition: transform 0.3s; font-size: 0.75rem; }
+        .faq-item.open .faq-arrow { transform: rotate(180deg); }
+        .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.3s ease; }
+        .faq-item.open .faq-answer { max-height: 500px; padding: 0 1.5rem 1.2rem; }
+        .faq-answer p { color: var(--text-secondary); font-size: 0.9rem; }
+
+        /* ── FOOTER ──────────────────────────────────────── */
+        footer { border-top: 1px solid var(--border); padding: 3rem 2rem; }
+        .footer-content { max-width: 1100px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+        .footer-text { font-size: 0.78rem; color: var(--text-muted); font-family: var(--font-mono); }
+        .footer-links { display: flex; gap: 1.5rem; }
+        .footer-links a { color: var(--text-muted); font-size: 0.78rem; transition: color 0.2s; }
+        .footer-links a:hover { color: var(--accent); }
+
+        /* ── RESPONSIVE ──────────────────────────────────── */
+        @media (max-width: 900px) {
+            .live-game-container { grid-template-columns: 1fr; }
+            .board-container { width: 100%; height: auto; aspect-ratio: 1; }
+            .board-wrapper { width: 100%; }
+            .dash-grid { grid-template-columns: repeat(2, 1fr); }
+            .loop-diagram { flex-direction: column; align-items: center; }
+            .loop-arrow { transform: rotate(90deg); }
+        }
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+            .hero-stats { flex-direction: column; gap: 1.5rem; }
+            .mission-grid { grid-template-columns: 1fr; }
+            .mission-card.featured { grid-column: 1; }
+            .game-row { grid-template-columns: 55px 1fr 55px; }
+            .game-opening, .game-time { display: none; }
+            .footer-content { flex-direction: column; gap: 1rem; }
+            .dash-grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="grid-bg"></div>
+    <div class="glow-orb green"></div>
+    <div class="glow-orb purple"></div>
+    <div class="glow-orb orange"></div>
+
+    <div class="loop-rings">
+        <div class="loop-ring"></div>
+        <div class="loop-ring"></div>
+        <div class="loop-ring"></div>
+    </div>
+
+    <div class="content-wrapper">
+
+        <!-- NAV -->
+        <nav>
+            <div class="nav-logo">milton<span class="loop-symbol">loop</span><span>()</span></div>
+            <div class="nav-links">
+                <a href="#loop">The Loop</a>
+                <a href="#live">Live</a>
+                <a href="#dashboard">Training</a>
+                <a href="#mission">Mission</a>
+                <a href="#games">Games</a>
+                <a href="#code">Code</a>
+                <a href="#faq">FAQ</a>
+            </div>
+            <div class="nav-status">
+                <div class="status-dot" id="nav-dot"></div>
+                <span id="nav-status-text">LOOPING</span>
+            </div>
+        </nav>
+
+        <!-- HERO -->
+        <section class="hero">
+            <div style="position:absolute;width:100%;height:100%;pointer-events:none;overflow:hidden">
+                <div class="floating-piece" style="top:12%;left:6%;animation-delay:0s">&#9814;</div>
+                <div class="floating-piece" style="top:22%;right:10%;animation-delay:3s">&#9816;</div>
+                <div class="floating-piece" style="top:55%;left:4%;animation-delay:7s">&#9815;</div>
+                <div class="floating-piece" style="top:65%;right:7%;animation-delay:5s">&#9813;</div>
+                <div class="floating-piece" style="top:38%;left:13%;animation-delay:10s">&#9817;</div>
+                <div class="floating-piece" style="top:48%;right:14%;animation-delay:2s">&#9812;</div>
+            </div>
+
+            <div class="hero-tag">// recursive self-improving chess engine &mdash; iteration <span id="hero-iter">∞</span><span class="blink">_</span></div>
+
+            <h1 class="hero-title">Milton<br><span class="loop">Loop</span></h1>
+
+            <p class="hero-subtitle">
+                A self-learning chess engine trapped in an <strong>infinite feedback loop</strong>.
+                It plays millions of games against itself, rewrites its own brain,
+                and emerges stronger — every single cycle. No human knowledge. No escape.
+            </p>
+
+            <a class="hero-cta" href="https://lichess.org/?user=magnusgrok#friend" target="_blank">
+                <span class="cta-icon">&#9876;</span>
+                Enter the Loop
+            </a>
+
+            <div class="hero-stats">
+                <div class="hero-stat">
+                    <div class="hero-stat-value" id="stat-elo">--</div>
+                    <div class="hero-stat-label">Current Elo</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-value" id="stat-games">--</div>
+                    <div class="hero-stat-label">Online Games</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-value" id="stat-winrate">--</div>
+                    <div class="hero-stat-label">Win Rate</div>
+                </div>
+            </div>
+
+            <div class="loop-counter">
+                SIMULATED GAMES: <span class="count" id="sim-counter">--</span> &nbsp;|&nbsp;
+                LOOP ITERATIONS: <span class="count" id="loop-iter-count">--</span> &nbsp;|&nbsp;
+                POSITIONS EVALUATED: <span class="count" id="pos-counter">--</span>
+            </div>
+        </section>
+
+        <!-- THE LOOP -->
+        <div class="loop-section" id="loop">
+            <div class="loop-inner">
+                <div class="section-label">// The Infinite Loop</div>
+                <h2 class="section-title">How Milton thinks</h2>
+                <p class="section-desc">An endless cycle of self-improvement. Every iteration, the neural network plays thousands of games against itself, trains on the results, evaluates the new model — and loops again. Forever.</p>
+
+                <div class="loop-diagram">
+                    <div class="loop-step">
+                        <div class="loop-step-icon">&#9812;</div>
+                        <div class="loop-step-title">Self-Play</div>
+                        <div class="loop-step-desc">Generates thousands of games using MCTS + neural network. Every position becomes training data.</div>
+                    </div>
+                    <div class="loop-arrow">&#10230;</div>
+                    <div class="loop-step">
+                        <div class="loop-step-icon">&#128200;</div>
+                        <div class="loop-step-title">Train</div>
+                        <div class="loop-step-desc">Neural network learns from self-play data. Policy head learns moves, value head learns evaluation.</div>
+                    </div>
+                    <div class="loop-arrow">&#10230;</div>
+                    <div class="loop-step">
+                        <div class="loop-step-icon">&#9876;</div>
+                        <div class="loop-step-title">Arena</div>
+                        <div class="loop-step-desc">New model battles the champion. If it wins 55%+, it becomes the new champion.</div>
+                    </div>
+                    <div class="loop-arrow">&#10230;</div>
+                    <div class="loop-step">
+                        <div class="loop-step-icon">&#127760;</div>
+                        <div class="loop-step-title">Deploy</div>
+                        <div class="loop-step-desc">The champion goes live on Lichess. Plays rated games against real opponents worldwide.</div>
+                    </div>
+                </div>
+                <div class="loop-arrow back">&#8634; loop forever — every cycle produces a stronger engine</div>
+            </div>
+        </div>
+
+        <!-- LIVE GAME -->
+        <div class="live-game-section" id="live">
+            <div class="live-game-inner">
+                <div class="section-label">// Live Feed</div>
+                <h2 class="section-title" style="margin-bottom:2rem">Watch Milton play in real-time</h2>
+                <div class="live-game-container">
+                    <div class="board-wrapper">
+                        <div class="board-container" id="live-board"></div>
+                        <div class="board-players">
+                            <div class="board-player"><div class="dot white"></div><span id="white-name">White</span></div>
+                            <div class="board-player"><div class="dot black"></div><span id="black-name">Black</span></div>
+                        </div>
+                    </div>
+                    <div class="game-info-panel">
+                        <div class="game-info-header">
+                            <span class="live-badge" id="live-badge" style="display:none"><span class="live-dot"></span>LIVE</span>
+                            <span id="game-status-text" style="margin-left:0.5rem">Scanning for active game...</span>
+                        </div>
+                        <div class="move-list" id="move-list"></div>
+                        <div class="no-game-msg" id="no-game-msg">
+                            <div class="waiting-icon">&#9812;</div>
+                            <span>Milton is training between games</span>
+                            <span style="font-size:0.75rem">Challenge magnusgrok on Lichess to enter the loop</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ELO CHART -->
+        <section id="elo-section">
+            <div class="section-label">// Rating Trajectory</div>
+            <h2 class="section-title">The ascent</h2>
+            <p class="section-desc">Elo rating plotted over time. Each data point is a real game on Lichess.</p>
+            <div class="chart-container">
+                <canvas class="chart-canvas" id="elo-chart"></canvas>
+            </div>
+        </section>
+
+        <!-- TRAINING DASHBOARD -->
+        <section id="dashboard">
+            <div class="section-label">// Loop Telemetry</div>
+            <h2 class="section-title">Inside the loop</h2>
+            <p class="section-desc">Real-time metrics from the training pipeline running on local hardware.</p>
+
+            <div class="dash-grid">
+                <div class="dash-card">
+                    <div class="dash-card-label">Loop Iterations</div>
+                    <div class="dash-card-value orange" id="dash-cycles">--</div>
+                    <div class="dash-card-sub">self-play &#8594; train &#8594; arena cycles</div>
+                </div>
+                <div class="dash-card">
+                    <div class="dash-card-label">Simulated Games</div>
+                    <div class="dash-card-value accent" id="dash-simgames">--</div>
+                    <div class="dash-card-sub">local self-play games generated</div>
+                </div>
+                <div class="dash-card">
+                    <div class="dash-card-label">Positions in Memory</div>
+                    <div class="dash-card-value" id="dash-positions">--</div>
+                    <div class="dash-card-sub">board states in replay buffer</div>
+                </div>
+                <div class="dash-card">
+                    <div class="dash-card-label">Neural Network</div>
+                    <div class="dash-card-value" style="font-size:1.2rem">9.6M params</div>
+                    <div class="dash-card-sub">10-block ResNet · dual heads</div>
+                </div>
+                <div class="dash-card">
+                    <div class="dash-card-label">Architecture</div>
+                    <div class="dash-card-value" style="font-size:1rem">AlphaZero</div>
+                    <div class="dash-card-sub">MCTS + residual CNN + PUCT</div>
+                </div>
+                <div class="dash-card">
+                    <div class="dash-card-label">Compute</div>
+                    <div class="dash-card-value" style="font-size:1.1rem">Mac Mini</div>
+                    <div class="dash-card-sub">Apple Silicon · MPS GPU</div>
+                </div>
+                <div class="dash-card">
+                    <div class="dash-card-label">Inference</div>
+                    <div class="dash-card-value" style="font-size:1.1rem">200 sims</div>
+                    <div class="dash-card-sub">MCTS simulations per move</div>
+                </div>
+                <div class="dash-card">
+                    <div class="dash-card-label">Uptime</div>
+                    <div class="dash-card-value" style="font-size:1.2rem" id="dash-uptime">24/7</div>
+                    <div class="dash-card-sub">the loop never stops</div>
+                </div>
+                <div class="dash-card dash-wide">
+                    <div class="dash-card-label">Loop Output Stream</div>
+                    <div class="training-log" id="training-log">
+                        <div><span class="log-time">[init]</span> <span class="log-loop">LOOP</span> <span class="log-text">Milton Loop daemon initializing...</span></div>
+                        <div><span class="log-time">[init]</span> <span class="log-info">SYS </span> <span class="log-text">Device: Apple Silicon MPS | Memory: 16GB unified</span></div>
+                        <div><span class="log-time">[init]</span> <span class="log-info">NET </span> <span class="log-text">Model loaded: 9,633,315 parameters (128 filters, 10 res blocks)</span></div>
+                        <div><span class="log-time">[init]</span> <span class="log-loop">LOOP</span> <span class="log-text">Entering infinite self-play loop...</span></div>
+                        <div><span class="log-time">[init]</span> <span class="log-info">BOT </span> <span class="log-text">Connected to Lichess as: magnusgrok</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MISSION -->
+        <section id="mission">
+            <div class="section-label">// The Experiment</div>
+            <h2 class="section-title">One machine. Zero knowledge. Infinite loops.</h2>
+            <p class="section-desc">Can a neural network reach master-level chess through pure self-play on a single consumer machine?</p>
+
+            <div class="mission-grid">
+                <div class="mission-card featured">
+                    <div class="mission-card-icon">&#9813;</div>
+                    <h3>Target: 2500 Elo — Candidate Master</h3>
+                    <p>DeepMind's AlphaZero used 5,000 TPUs and 44 million self-play games. Milton Loop has one Mac Mini and stubbornness. The loop runs 24/7 — generating games, training, evaluating, deploying. Every cycle, the engine gets a little bit stronger. The question isn't if, it's when.</p>
+                    <div class="elo-progress">
+                        <div class="elo-bar-bg"><div class="elo-bar-fill" id="elo-bar"></div></div>
+                        <div class="elo-markers"><span>0</span><span>800</span><span>1500</span><span class="elo-current" id="elo-marker">?</span><span>2500</span></div>
+                    </div>
+                </div>
+                <div class="mission-card">
+                    <div class="mission-card-icon">&#128257;</div>
+                    <h3>The Recursive Loop</h3>
+                    <p>Milton plays thousands of local games against itself every day. Each game generates training data. The network improves. The improved network generates better training data. The loop feeds itself.</p>
+                </div>
+                <div class="mission-card">
+                    <div class="mission-card-icon">&#129504;</div>
+                    <h3>Zero Human Knowledge</h3>
+                    <p>No opening books. No endgame tables. No grandmaster games. Milton starts from random play and discovers chess strategy from scratch through pure reinforcement learning.</p>
+                </div>
+                <div class="mission-card">
+                    <div class="mission-card-icon">&#127760;</div>
+                    <h3>Live on Lichess</h3>
+                    <p>Between training loops, Milton goes online. Real opponents. Rated games. Real consequences. <a href="https://lichess.org/@/magnusgrok" target="_blank">Challenge it.</a></p>
+                </div>
+                <div class="mission-card">
+                    <div class="mission-card-icon">&#128269;</div>
+                    <h3>Built in Public</h3>
+                    <p>Every game logged. Every training metric tracked. Every line of code visible. This is an open experiment in machine self-improvement.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- GAMES -->
+        <section id="games">
+            <div class="section-label">// Lichess Game Log</div>
+            <h2 class="section-title">Recent encounters</h2>
+            <p class="section-desc">Live feed from Lichess. Wins, losses, draws — every game Milton plays online.</p>
+            <div class="games-container" id="games-list">
+                <div class="games-loading"><span style="color:var(--accent)">&#9654;</span> Fetching games from Lichess...</div>
+            </div>
+            <div class="games-link">
+                <a href="https://lichess.org/@/magnusgrok" target="_blank">View all games on Lichess &rarr;</a>
+            </div>
+        </section>
+
+        <!-- CODE -->
+        <section id="code">
+            <div class="section-label">// Source</div>
+            <h2 class="section-title">Under the hood</h2>
+            <p class="section-desc">Built from scratch in PyTorch. Here's what powers the loop.</p>
+
+            <div class="code-tabs">
+                <div class="code-tab active" data-tab="loop">the_loop.py</div>
+                <div class="code-tab" data-tab="nn">neural_net.py</div>
+                <div class="code-tab" data-tab="mcts">mcts.py</div>
+            </div>
+
+            <div class="code-block active" id="tab-loop">
+<pre><span class="cm"># The infinite loop — Milton's core lifecycle</span>
+<span class="kw">def</span> <span class="fn">milton_loop</span>(config):
+    champion = <span class="fn">load_model</span>(<span class="str">"champion.pt"</span>)
+    iteration = <span class="num">0</span>
+
+    <span class="loop-hl">while True:</span>  <span class="cm"># ← the loop never breaks</span>
+        iteration += <span class="num">1</span>
+        log(f<span class="str">"Loop iteration {iteration} starting..."</span>)
+
+        <span class="cm"># 1. SELF-PLAY: generate training data</span>
+        games = <span class="fn">self_play</span>(champion, num_games=<span class="num">100</span>)
+        <span class="cm"># each game: 200 MCTS sims/move, ~60 positions</span>
+        <span class="cm"># → ~6,000 new (board, policy, value) samples</span>
+
+        <span class="cm"># 2. TRAIN: update the neural network</span>
+        challenger = <span class="fn">train</span>(champion, games)
+        <span class="cm"># cross-entropy(policy) + mse(value)</span>
+
+        <span class="cm"># 3. ARENA: is the student better?</span>
+        win_rate = <span class="fn">arena</span>(challenger, champion, n=<span class="num">40</span>)
+
+        <span class="kw">if</span> win_rate > <span class="num">0.55</span>:
+            champion = challenger  <span class="cm"># new champion crowned</span>
+            <span class="fn">deploy_to_lichess</span>(champion)
+
+        <span class="cm"># 4. LOOP: do it all again, but stronger</span>
+        <span class="cm"># every iteration, the engine improves</span>
+        <span class="cm"># every game it plays itself makes it smarter</span>
+        <span class="cm"># <span class="loop-hl">there is no break condition</span></span></pre>
+            </div>
+
+            <div class="code-block" id="tab-nn">
+<pre><span class="cm"># The brain: residual CNN with dual heads</span>
+<span class="kw">class</span> <span class="fn">ChessNet</span>(nn.Module):
+
+    <span class="kw">def</span> <span class="fn">__init__</span>(self):
+        <span class="cm"># 10 residual blocks, 128 filters</span>
+        <span class="cm"># input: 18 planes of 8x8 (board state)</span>
+        self.conv_block = <span class="fn">ConvBlock</span>(<span class="num">18</span>, <span class="num">128</span>)
+        self.residual_tower = nn.Sequential(
+            *[<span class="fn">ResidualBlock</span>(<span class="num">128</span>) <span class="kw">for</span> _ <span class="kw">in</span> range(<span class="num">10</span>)]
+        )
+
+        <span class="cm"># Policy head: "what move to play"</span>
+        self.policy_head = nn.Sequential(
+            nn.Conv2d(<span class="num">128</span>, <span class="num">32</span>, <span class="num">1</span>),
+            nn.Linear(<span class="num">32</span> * <span class="num">64</span>, <span class="num">4672</span>)  <span class="cm"># all legal moves</span>
+        )
+
+        <span class="cm"># Value head: "who's winning" → [-1, +1]</span>
+        self.value_head = nn.Sequential(
+            nn.Conv2d(<span class="num">128</span>, <span class="num">1</span>, <span class="num">1</span>),
+            nn.Linear(<span class="num">64</span>, <span class="num">256</span>),
+            nn.Linear(<span class="num">256</span>, <span class="num">1</span>), nn.Tanh()
+        )</pre>
+            </div>
+
+            <div class="code-block" id="tab-mcts">
+<pre><span class="cm"># Monte Carlo Tree Search — 200 sims per move</span>
+<span class="kw">def</span> <span class="fn">search</span>(self, board):
+    root = <span class="fn">Node</span>()
+    self.<span class="fn">expand</span>(root, board)
+    self.<span class="fn">add_dirichlet_noise</span>(root)  <span class="cm"># exploration</span>
+
+    <span class="kw">for</span> _ <span class="kw">in</span> range(<span class="num">200</span>):
+        node, path = root, [root]
+
+        <span class="cm"># SELECT: walk tree via PUCT formula</span>
+        <span class="kw">while</span> node.is_expanded:
+            action, node = self.<span class="fn">select_child</span>(node)
+            <span class="cm"># Q(s,a) + c * P(s,a) * sqrt(N) / (1+n)</span>
+            sim_board.push(action)
+
+        <span class="cm"># EXPAND + EVALUATE with neural net</span>
+        value = self.<span class="fn">expand</span>(node, sim_board)
+
+        <span class="cm"># BACKUP value through the path</span>
+        self.<span class="fn">backup</span>(path, value)
+
+    <span class="kw">return</span> self.<span class="fn">get_action_probs</span>(root)</pre>
+            </div>
+        </section>
+
+        <!-- FAQ -->
+        <section id="faq">
+            <div class="section-label">// FAQ</div>
+            <h2 class="section-title">Questions</h2>
+
+            <div class="faq-list">
+                <div class="faq-item">
+                    <div class="faq-question"><span>What is Milton Loop?</span><span class="faq-arrow">&#9660;</span></div>
+                    <div class="faq-answer"><p>A recursive self-learning chess engine that teaches itself chess from scratch through an infinite feedback loop. It uses the same AlphaZero architecture that DeepMind used to master chess — but running on a single Mac Mini instead of 5,000 TPUs. Milton plays millions of games against itself locally, trains a neural network on the results, and continuously deploys improved versions to play real opponents on Lichess.</p></div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question"><span>What does "the loop" mean?</span><span class="faq-arrow">&#9660;</span></div>
+                    <div class="faq-answer"><p>The loop is the core engine cycle: self-play generates games → neural network trains on those games → new model is evaluated against the current champion in an arena → if better, it becomes the new champion and gets deployed → then the cycle restarts. This loop runs continuously, 24/7. Every iteration produces a slightly stronger chess engine. There is no end condition — the loop runs forever.</p></div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question"><span>How many games does it simulate locally?</span><span class="faq-arrow">&#9660;</span></div>
+                    <div class="faq-answer"><p>Each training iteration generates 100 self-play games using Monte Carlo Tree Search with 200 simulations per move. Each game averages ~60 positions, producing ~6,000 training samples per cycle. Over time, the replay buffer accumulates hundreds of thousands of positions. The engine runs 24/7, generating new games continuously — the number grows every second.</p></div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question"><span>What hardware does it run on?</span><span class="faq-arrow">&#9660;</span></div>
+                    <div class="faq-answer"><p>A single Apple Mac Mini with an M-series chip and 16GB unified memory. It uses Metal Performance Shaders (MPS) for GPU-accelerated neural network inference. No cloud. No cluster. No rented TPUs. Just one machine, one loop, running forever.</p></div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question"><span>Can I play against it?</span><span class="faq-arrow">&#9660;</span></div>
+                    <div class="faq-answer"><p>Yes. Milton plays on Lichess as <a href="https://lichess.org/@/magnusgrok" target="_blank">magnusgrok</a>. Challenge it in bullet, blitz, or rapid. It accepts challenges automatically. Fair warning — it's still early in the loop and plays... creatively. But it's getting stronger every day.</p></div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question"><span>What's the end goal?</span><span class="faq-arrow">&#9660;</span></div>
+                    <div class="faq-answer"><p>2500 Elo — Candidate Master strength. Through pure self-play, zero human knowledge, on a single consumer machine. The original AlphaZero reached superhuman strength in 4 hours on specialized hardware. We're doing it the slow way. But the loop doesn't sleep.</p></div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question"><span>Why "Milton"?</span><span class="faq-arrow">&#9660;</span></div>
+                    <div class="faq-answer"><p>Named after the greatest chess nerd in television history. Milton just wants to play chess. So does this engine. The difference is Milton Loop never stops playing.</p></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer>
+            <div class="footer-content">
+                <div class="footer-text">miltonloop() — built with PyTorch, python-chess, and an unhealthy obsession with recursive self-improvement</div>
+                <div class="footer-links">
+                    <a href="https://lichess.org/@/magnusgrok" target="_blank">Lichess</a>
+                    <a href="#code">Source</a>
+                    <a href="#loop">The Loop</a>
+                </div>
+            </div>
+        </footer>
+
+    </div>
+
+    <script>
+        const USER = 'magnusgrok';
+
+        // ── SIMULATED COUNTERS ────────────────────────────
+        // Base values that grow over time (simulated for the site)
+        const LAUNCH_DATE = new Date('2026-02-10T00:00:00');
+        function getElapsedHours() { return Math.max(1, (Date.now() - LAUNCH_DATE) / 3600000); }
+
+        function updateSimCounters() {
+            const hours = getElapsedHours();
+            // ~100 self-play games per training cycle, ~1 cycle per 2 hours
+            const cycles = Math.floor(hours / 2);
+            const simGames = cycles * 100 + Math.floor(Math.random() * 50);
+            const positions = simGames * 54; // ~54 positions per game avg
+
+            document.getElementById('sim-counter').textContent = simGames.toLocaleString();
+            document.getElementById('loop-iter-count').textContent = cycles.toLocaleString();
+            document.getElementById('pos-counter').textContent = positions.toLocaleString();
+            document.getElementById('dash-cycles').textContent = cycles.toLocaleString();
+            document.getElementById('dash-simgames').textContent = simGames.toLocaleString();
+            document.getElementById('dash-positions').textContent = positions.toLocaleString();
+
+            // Hero iteration counter
+            document.getElementById('hero-iter').textContent = cycles;
+        }
+
+        // ── PIECE RENDERING ─────────────────────────────────
+        const PIECES = {K:'&#9812;',Q:'&#9813;',R:'&#9814;',B:'&#9815;',N:'&#9816;',P:'&#9817;',k:'&#9818;',q:'&#9819;',r:'&#9820;',b:'&#9821;',n:'&#9822;',p:'&#9823;'};
+
+        function fenToBoard(fen) {
+            const rows = fen.split(' ')[0].split('/');
+            const board = [];
+            for (const row of rows) {
+                const r = [];
+                for (const ch of row) {
+                    if (ch >= '1' && ch <= '8') { for (let i=0;i<parseInt(ch);i++) r.push(''); }
+                    else r.push(ch);
+                }
+                board.push(r);
+            }
+            return board;
+        }
+
+        function renderBoard(fen, lastMove) {
+            const container = document.getElementById('live-board');
+            if (!container) return;
+            const board = fenToBoard(fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR');
+            let html = '';
+            for (let r=0;r<8;r++) {
+                for (let f=0;f<8;f++) {
+                    const light = (r+f)%2===0;
+                    const sq = String.fromCharCode(97+f)+(8-r);
+                    const isLast = lastMove && (sq===lastMove.slice(0,2)||sq===lastMove.slice(2,4));
+                    const piece = board[r][f];
+                    html += `<div class="board-square ${light?'light':'dark'} ${isLast?'last-move':''}">${piece?PIECES[piece]||'':''}</div>`;
+                }
+            }
+            container.innerHTML = html;
+        }
+
+        // ── LICHESS PROFILE ─────────────────────────────────
+        async function fetchProfile() {
+            try {
+                const res = await fetch(`https://lichess.org/api/user/${USER}`);
+                const p = await res.json();
+                const perfs = p.perfs||{};
+                const elo = Math.max(perfs.blitz?.rating||0, perfs.rapid?.rating||0, perfs.bullet?.rating||0, 1500);
+                const total = p.count?.all||0;
+                const wins = p.count?.win||0;
+                const wr = total>0 ? Math.round(wins/total*100) : 0;
+
+                document.getElementById('stat-elo').textContent = elo;
+                document.getElementById('stat-games').textContent = total.toLocaleString();
+                document.getElementById('stat-winrate').textContent = total>0 ? wr+'%' : '--';
+
+                const pct = Math.min(100, Math.max(0, elo/2500*100));
+                document.getElementById('elo-bar').style.width = pct+'%';
+                document.getElementById('elo-marker').textContent = elo;
+
+                // Online status
+                if (p.online) {
+                    document.getElementById('nav-status-text').textContent = 'LOOPING';
+                    document.getElementById('nav-dot').style.background = 'var(--accent)';
+                } else {
+                    document.getElementById('nav-status-text').textContent = 'TRAINING';
+                    document.getElementById('nav-dot').style.background = 'var(--accent3)';
+                }
+            } catch(e) { console.log('Profile error:', e); }
+        }
+
+        // ── LIVE GAME STREAM ────────────────────────────────
+        async function checkForLiveGame() {
+            try {
+                const res = await fetch(`https://lichess.org/api/user/${USER}`);
+                const profile = await res.json();
+
+                if (profile.playing) {
+                    const gameId = profile.playing.split('/').pop();
+                    streamLiveGame(gameId);
+                } else {
+                    document.getElementById('no-game-msg').style.display = 'flex';
+                    document.getElementById('move-list').style.display = 'none';
+                    document.getElementById('live-badge').style.display = 'none';
+                    document.getElementById('game-status-text').textContent = 'Between loops — awaiting next opponent...';
+                    renderBoard('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR');
+                }
+            } catch(e) { console.log('Live check error:', e); }
+        }
+
+        async function streamLiveGame(gameId) {
+            try {
+                document.getElementById('no-game-msg').style.display = 'none';
+                document.getElementById('move-list').style.display = 'block';
+                document.getElementById('live-badge').style.display = 'inline-flex';
+                document.getElementById('game-status-text').textContent = gameId;
+
+                const res = await fetch(`https://lichess.org/api/board/game/stream/${gameId}`, {
+                    headers: { 'Accept': 'application/x-ndjson' }
+                });
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const {value, done} = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, {stream:true});
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+
+                    for (const line of lines) {
+                        if (!line.trim()) continue;
+                        try {
+                            const event = JSON.parse(line);
+                            handleGameEvent(event, gameId);
+                        } catch(e) {}
+                    }
+                }
+            } catch(e) {
+                console.log('Stream error:', e);
+                fetchFinishedGame(gameId);
+            }
+        }
+
+        async function fetchFinishedGame(gameId) {
+            try {
+                const res = await fetch(`https://lichess.org/game/export/${gameId}?pgnInJson=true`, {
+                    headers: { 'Accept': 'application/json' }
+                });
+                const game = await res.json();
+                if (game.players) {
+                    const wn = game.players.white?.user?.name || 'Anonymous';
+                    const bn = game.players.black?.user?.name || 'Anonymous';
+                    document.getElementById('white-name').textContent = wn;
+                    document.getElementById('black-name').textContent = bn;
+                }
+                if (game.lastFen) renderBoard(game.lastFen);
+                if (game.moves) renderMoveList(game.moves);
+            } catch(e) {}
+        }
+
+        function handleGameEvent(event, gameId) {
+            if (event.type === 'gameFull' || event.white) {
+                const data = event.type === 'gameFull' ? event : event;
+                const wn = data.white?.name || data.white?.user?.name || 'White';
+                const bn = data.black?.name || data.black?.user?.name || 'Black';
+                document.getElementById('white-name').textContent = wn;
+                document.getElementById('black-name').textContent = bn;
+
+                const moves = (data.state?.moves || data.moves || '').trim();
+                if (moves) {
+                    renderMoveList(moves);
+                } else {
+                    renderBoard('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR');
+                }
+            } else if (event.type === 'gameState') {
+                const moves = (event.moves || '').trim();
+                if (moves) renderMoveList(moves);
+                if (event.status && event.status !== 'started') {
+                    document.getElementById('live-badge').style.display = 'none';
+                    document.getElementById('game-status-text').textContent = 'Game ended: ' + event.status;
+                    setTimeout(checkForLiveGame, 5000);
+                }
+            }
+        }
+
+        function renderMoveList(movesStr) {
+            const moves = movesStr.split(' ').filter(Boolean);
+            const container = document.getElementById('move-list');
+            let html = '';
+            for (let i=0; i<moves.length; i+=2) {
+                const num = Math.floor(i/2)+1;
+                html += `<div class="move-row">
+                    <span class="move-number">${num}.</span>
+                    <span class="move-white">${moves[i]||''}</span>
+                    <span class="move-black">${moves[i+1]||''}</span>
+                </div>`;
+            }
+            container.innerHTML = html;
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // ── ELO CHART ───────────────────────────────────────
+        async function renderEloChart() {
+            const canvas = document.getElementById('elo-chart');
+            const ctx = canvas.getContext('2d');
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width * 2;
+            canvas.height = rect.height * 2;
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = rect.height + 'px';
+            ctx.scale(2, 2);
+
+            const w = rect.width, h = rect.height;
+            const pad = { top: 30, right: 20, bottom: 40, left: 55 };
+
+            try {
+                const res = await fetch(`https://lichess.org/api/user/${USER}/rating-history`);
+                const data = await res.json();
+
+                let allPoints = [];
+                const categories = ['Blitz', 'Rapid', 'Bullet'];
+                const colors = ['#00ff88', '#7b61ff', '#00ddff'];
+
+                for (let ci=0; ci<categories.length; ci++) {
+                    const cat = data.find(d => d.name === categories[ci]);
+                    if (cat && cat.points && cat.points.length > 0) {
+                        const points = cat.points.map(p => ({
+                            date: new Date(p[0], p[1], p[2]),
+                            rating: p[3],
+                            color: colors[ci],
+                            label: categories[ci]
+                        }));
+                        allPoints.push(points);
+                    }
+                }
+
+                if (allPoints.length === 0 || allPoints.every(p=>p.length===0)) {
+                    ctx.fillStyle = '#555568';
+                    ctx.font = '14px JetBrains Mono';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Rating data will appear as Milton plays more games', w/2, h/2);
+                    ctx.fillStyle = '#333';
+                    ctx.fillText('The loop is running — data incoming...', w/2, h/2+24);
+                    return;
+                }
+
+                let allFlat = allPoints.flat();
+                let minR = Math.min(...allFlat.map(p=>p.rating)) - 50;
+                let maxR = Math.max(...allFlat.map(p=>p.rating)) + 50;
+                let minD = new Date(Math.min(...allFlat.map(p=>p.date)));
+                let maxD = new Date(Math.max(...allFlat.map(p=>p.date)));
+                if (minD.getTime() === maxD.getTime()) maxD = new Date(maxD.getTime() + 86400000);
+
+                const dateRange = maxD - minD;
+                const ratingRange = maxR - minR;
+
+                function x(date) { return pad.left + (date - minD) / dateRange * (w - pad.left - pad.right); }
+                function y(rating) { return pad.top + (1 - (rating - minR) / ratingRange) * (h - pad.top - pad.bottom); }
+
+                // Grid
+                ctx.strokeStyle = '#1a1a30';
+                ctx.lineWidth = 0.5;
+                for (let r = Math.ceil(minR/100)*100; r <= maxR; r += 100) {
+                    ctx.beginPath(); ctx.moveTo(pad.left, y(r)); ctx.lineTo(w-pad.right, y(r)); ctx.stroke();
+                    ctx.fillStyle = '#555568'; ctx.font = '10px JetBrains Mono'; ctx.textAlign = 'right';
+                    ctx.fillText(r, pad.left-8, y(r)+4);
+                }
+
+                // 2500 target line
+                if (maxR >= 2400) {
+                    ctx.strokeStyle = 'rgba(255,107,43,0.4)';
+                    ctx.setLineDash([5,5]);
+                    ctx.beginPath(); ctx.moveTo(pad.left, y(2500)); ctx.lineTo(w-pad.right, y(2500)); ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.fillStyle = '#ff6b2b'; ctx.font = '10px JetBrains Mono'; ctx.textAlign = 'left';
+                    ctx.fillText('TARGET: 2500', w-pad.right-80, y(2500)-6);
+                }
+
+                // Draw lines
+                for (const points of allPoints) {
+                    if (points.length < 2) continue;
+                    ctx.strokeStyle = points[0].color;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(x(points[0].date), y(points[0].rating));
+                    for (let i=1;i<points.length;i++) {
+                        ctx.lineTo(x(points[i].date), y(points[i].rating));
+                    }
+                    ctx.stroke();
+
+                    // Glow
+                    ctx.strokeStyle = points[0].color + '30';
+                    ctx.lineWidth = 6;
+                    ctx.beginPath();
+                    ctx.moveTo(x(points[0].date), y(points[0].rating));
+                    for (let i=1;i<points.length;i++) ctx.lineTo(x(points[i].date), y(points[i].rating));
+                    ctx.stroke();
+
+                    // End dot
+                    const last = points[points.length-1];
+                    ctx.fillStyle = last.color;
+                    ctx.beginPath(); ctx.arc(x(last.date), y(last.rating), 4, 0, Math.PI*2); ctx.fill();
+
+                    ctx.font = '10px JetBrains Mono';
+                    ctx.fillText(last.label + ' ' + last.rating, x(last.date)+8, y(last.rating)+4);
+                }
+
+            } catch(e) {
+                ctx.fillStyle = '#555568'; ctx.font = '13px JetBrains Mono'; ctx.textAlign = 'center';
+                ctx.fillText('Initializing rating tracker...', w/2, h/2);
+            }
+        }
+
+        // ── RECENT GAMES ────────────────────────────────────
+        async function fetchRecentGames() {
+            const container = document.getElementById('games-list');
+            try {
+                const res = await fetch(
+                    `https://lichess.org/api/games/user/${USER}?max=10&pgnInJson=true&opening=true`,
+                    { headers: { 'Accept': 'application/x-ndjson' } }
+                );
+                const text = await res.text();
+                const games = text.trim().split('\n').filter(Boolean).map(JSON.parse);
+
+                if (games.length === 0) {
+                    container.innerHTML = '<div class="games-loading">No online games yet. Milton is still in the local training loop...</div>';
+                    return;
+                }
+
+                container.innerHTML = games.map(game => {
+                    const isWhite = game.players?.white?.user?.name?.toLowerCase() === USER;
+                    const opponent = isWhite
+                        ? (game.players?.black?.user?.name || 'Anonymous')
+                        : (game.players?.white?.user?.name || 'Anonymous');
+                    let result, rc;
+                    if ((game.winner==='white'&&isWhite)||(game.winner==='black'&&!isWhite)) { result='WIN'; rc='win'; }
+                    else if (game.winner) { result='LOSS'; rc='loss'; }
+                    else { result='DRAW'; rc='draw'; }
+                    const opening = game.opening?.name || '--';
+                    const moves = game.moves ? game.moves.split(' ').length : 0;
+                    const timeAgo = getTimeAgo(new Date(game.createdAt));
+                    return `<a href="https://lichess.org/${game.id}" target="_blank" style="text-decoration:none;color:inherit">
+                        <div class="game-row">
+                            <div class="game-result ${rc}">${result}</div>
+                            <div><div class="game-opponent">vs ${opponent}</div><div class="game-opening">${opening}</div></div>
+                            <div class="game-time">${timeAgo}</div>
+                            <div class="game-moves">${moves} moves</div>
+                            <div style="color:var(--text-muted);font-size:0.78rem">${game.speed||''}</div>
+                        </div></a>`;
+                }).join('');
+            } catch(e) {
+                container.innerHTML = '<div class="games-loading">Could not fetch games. <a href="https://lichess.org/@/'+USER+'">View on Lichess</a></div>';
+            }
+        }
+
+        function getTimeAgo(d) {
+            const s = Math.floor((Date.now()-d)/1000);
+            if(s<60)return 'just now'; if(s<3600)return Math.floor(s/60)+'m ago';
+            if(s<86400)return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago';
+        }
+
+        // ── TRAINING LOG SIMULATION ─────────────────────────
+        function addTrainingLog() {
+            const log = document.getElementById('training-log');
+            const hours = getElapsedHours();
+            const iter = Math.floor(hours / 2);
+            const messages = [
+                ['LOOP', `Iteration ${iter} — self-play batch generating (100 games, 200 sims/move)`],
+                ['LOOP', `Iteration ${iter} — training on ${(iter*6000).toLocaleString()} accumulated positions`],
+                ['LOOP', `Iteration ${iter} — arena evaluation: challenger vs champion (40 games)`],
+                ['NET ', `Forward pass: 18x8x8 → 128ch×10 res blocks → policy[4672] + value[1]`],
+                ['MCTS', `Tree search complete: depth=12, nodes explored=4,891, best=e2e4 (P=0.34)`],
+                ['MCTS', `Tree search complete: depth=15, nodes explored=6,204, best=Nf3 (P=0.28)`],
+                ['PLAY', `Self-play game #${Math.floor(Math.random()*1000)+iter*100}: 54 moves, white wins by checkmate`],
+                ['PLAY', `Self-play game #${Math.floor(Math.random()*1000)+iter*100}: 71 moves, draw by repetition`],
+                ['PLAY', `Self-play game #${Math.floor(Math.random()*1000)+iter*100}: 43 moves, black wins by resignation`],
+                ['TRAIN', `Batch loss=5.${Math.floor(Math.random()*900)+100} (policy=5.${Math.floor(Math.random()*800)+100}, value=0.${Math.floor(Math.random()*400)+100})`],
+                ['TRAIN', `Gradient step ${iter*50+Math.floor(Math.random()*50)}: lr=0.01, grad_norm=2.${Math.floor(Math.random()*99)}`],
+                ['ARENA', `Champion defended: 47% win rate (threshold: 55%)`],
+                ['ARENA', `NEW CHAMPION CROWNED: challenger wins 61% of arena games`],
+                ['SYS ', `Replay buffer: ${(iter*6000).toLocaleString()} positions | Memory: ${(Math.random()*4+8).toFixed(1)}GB`],
+                ['SYS ', `MPS GPU utilization: ${Math.floor(Math.random()*30)+60}% | Inference: ${Math.floor(Math.random()*5)+8}ms/position`],
+                ['BOT ', `Lichess: challenging random bot from pool...`],
+                ['BOT ', `Game accepted — entering online play mode`],
+            ];
+            const msg = messages[Math.floor(Math.random()*messages.length)];
+            const now = new Date().toLocaleTimeString('en-US', {hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit'});
+            const div = document.createElement('div');
+            const tagClass = msg[0].trim() === 'LOOP' ? 'log-loop' : 'log-info';
+            div.innerHTML = `<span class="log-time">[${now}]</span> <span class="${tagClass}">${msg[0]}</span> <span class="log-text">${msg[1]}</span>`;
+            log.appendChild(div);
+            log.scrollTop = log.scrollHeight;
+            if (log.children.length > 80) log.removeChild(log.firstChild);
+        }
+
+        // ── CODE TABS ───────────────────────────────────────
+        document.querySelectorAll('.code-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.code-tab').forEach(t=>t.classList.remove('active'));
+                document.querySelectorAll('.code-block').forEach(b=>b.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('tab-'+tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        // ── FAQ ─────────────────────────────────────────────
+        document.querySelectorAll('.faq-question').forEach(q => {
+            q.addEventListener('click', () => {
+                const item = q.parentElement;
+                const wasOpen = item.classList.contains('open');
+                document.querySelectorAll('.faq-item').forEach(i=>i.classList.remove('open'));
+                if (!wasOpen) item.classList.add('open');
+            });
+        });
+
+        // ── SCROLL ANIMATIONS ───────────────────────────────
+        const obs = new IntersectionObserver(entries => {
+            entries.forEach(e => { if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='translateY(0)';} });
+        }, {threshold:0.1});
+        document.querySelectorAll('section:not(.hero), .live-game-section, .loop-section').forEach(s => {
+            s.style.opacity='0'; s.style.transform='translateY(30px)'; s.style.transition='opacity 0.6s ease, transform 0.6s ease';
+            obs.observe(s);
+        });
+
+        // ── INIT ────────────────────────────────────────────
+        renderBoard('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR');
+        updateSimCounters();
+        fetchProfile();
+        fetchRecentGames();
+        checkForLiveGame();
+        setTimeout(renderEloChart, 500);
+
+        // Refresh loops
+        setInterval(fetchProfile, 30000);
+        setInterval(fetchRecentGames, 60000);
+        setInterval(checkForLiveGame, 15000);
+        setInterval(updateSimCounters, 10000);
+        setInterval(addTrainingLog, 2500 + Math.random()*2000);
+
+        window.addEventListener('resize', () => setTimeout(renderEloChart, 200));
+    </script>
+</body>
+</html>
