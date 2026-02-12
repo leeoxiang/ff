@@ -463,6 +463,38 @@
         .heatmap-stat { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-secondary); }
         .heatmap-stat strong { color: var(--accent); }
 
+        /* ── SOCIAL BAR ─────────────────────────────────── */
+        .social-bar {
+            position: fixed; left: 1.2rem; top: 50%; transform: translateY(-50%);
+            display: flex; flex-direction: column; gap: 0.75rem;
+            z-index: 90; opacity: 0; animation: fadeUp .8s ease forwards 1.3s;
+        }
+        .social-btn {
+            width: 40px; height: 40px; border-radius: 8px;
+            background: var(--bg-card); border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s; cursor: pointer; overflow: hidden;
+            text-decoration: none;
+        }
+        .social-btn:hover {
+            border-color: var(--accent); box-shadow: 0 0 18px var(--accent-glow);
+            transform: scale(1.12); text-decoration: none;
+        }
+        .social-btn img {
+            width: 22px; height: 22px; object-fit: contain;
+            filter: brightness(0.85) grayscale(0.2);
+            transition: filter 0.3s;
+        }
+        .social-btn:hover img { filter: brightness(1.1) grayscale(0); }
+        .social-btn .social-tooltip {
+            position: absolute; left: 52px; top: 50%; transform: translateY(-50%);
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
+            padding: 0.3rem 0.65rem; font-family: var(--font-mono); font-size: 0.65rem;
+            color: var(--accent); white-space: nowrap; pointer-events: none;
+            opacity: 0; transition: opacity 0.2s, left 0.2s;
+        }
+        .social-btn:hover .social-tooltip { opacity: 1; left: 56px; }
+
         /* ── RESPONSIVE ──────────────────────────────────── */
         @media (max-width: 900px) {
             .live-game-container { grid-template-columns: 1fr; }
@@ -481,6 +513,14 @@
             .game-opening, .game-time { display: none; }
             .footer-content { flex-direction: column; gap: 1rem; }
             .dash-grid { grid-template-columns: 1fr 1fr; }
+            .social-bar {
+                position: fixed; left: auto; right: auto; top: auto; bottom: 0;
+                transform: none; flex-direction: row; justify-content: center;
+                width: 100%; padding: 0.6rem 0; gap: 0.6rem;
+                background: rgba(5,5,10,0.95); backdrop-filter: blur(16px);
+                border-top: 1px solid var(--border);
+            }
+            .social-btn .social-tooltip { display: none; }
         }
     </style>
 </head>
@@ -497,6 +537,30 @@
     </div>
 
     <div class="content-wrapper">
+
+        <!-- SOCIAL BAR -->
+        <div class="social-bar">
+            <a class="social-btn" href="#" target="_blank" title="GitHub">
+                <img src="https://cdn.prod.website-files.com/69082c5061a39922df8ed3b6/6983ebadee1a5bb66150c566_69093cba0db485064d0267ca_68d5c1872568958fd78018bb_twitter%20(1).png" alt="GitHub">
+                <span class="social-tooltip">github</span>
+            </a>
+            <a class="social-btn" href="#" target="_blank" title="Moltbook">
+                <img src="https://cdn.prod.website-files.com/69082c5061a39922df8ed3b6/6983eb56a711579651228581_moltbook.png" alt="Moltbook">
+                <span class="social-tooltip">moltbook</span>
+            </a>
+            <a class="social-btn" href="#" target="_blank" title="Medium">
+                <img src="https://cdn.prod.website-files.com/69082c5061a39922df8ed3b6/6983eb56f1ca3d355dfdf898_medium.png" alt="Medium">
+                <span class="social-tooltip">medium</span>
+            </a>
+            <a class="social-btn" href="#" target="_blank" title="Twitter">
+                <img src="https://cdn.prod.website-files.com/69082c5061a39922df8ed3b6/69093cba0db485064d0267ca_68d5c1872568958fd78018bb_twitter.png" alt="Twitter">
+                <span class="social-tooltip">twitter</span>
+            </a>
+            <a class="social-btn" href="#" target="_blank" title="pump.fun">
+                <img src="https://cdn.prod.website-files.com/69082c5061a39922df8ed3b6/69093cbeb0e0ed83a682a1c1_68d5c1872568958fd78018bb_twitter%20(1).png" alt="pump.fun">
+                <span class="social-tooltip">pump.fun</span>
+            </a>
+        </div>
 
         <!-- NAV -->
         <nav>
