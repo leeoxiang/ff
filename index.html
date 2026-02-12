@@ -178,6 +178,39 @@
         @keyframes floatPiece { 0%,100%{transform:translateY(0) rotate(0deg)} 50%{transform:translateY(-30px) rotate(10deg)} }
         @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
 
+        /* ── ORIGIN SECTION ─────────────────────────────── */
+        .origin-section { background: var(--bg-secondary); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); max-width: 100%; padding: 5rem 2rem; }
+        .origin-inner { max-width: 1100px; margin: 0 auto; }
+        .origin-content {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center;
+            margin-top: 2rem;
+        }
+        .origin-text { }
+        .origin-text p { color: var(--text-secondary); font-size: 0.95rem; line-height: 1.75; margin-bottom: 1rem; }
+        .origin-text .origin-quote {
+            border-left: 3px solid var(--accent3); padding-left: 1.2rem; margin: 1.5rem 0;
+            font-style: italic; color: var(--text-secondary); font-size: 0.92rem;
+        }
+        .origin-text .origin-quote span { color: var(--text-muted); font-size: 0.78rem; display: block; margin-top: 0.3rem; font-style: normal; }
+        .origin-excelsior {
+            font-family: var(--font-mono); font-size: 2.5rem; font-weight: 700;
+            background: linear-gradient(135deg, var(--accent3), var(--accent), var(--accent2));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            letter-spacing: 0.05em; margin-top: 1.5rem;
+        }
+        .origin-video-wrap {
+            display: flex; align-items: center; justify-content: center;
+        }
+        .origin-video-wrap video {
+            width: 100%; max-width: 480px; border-radius: 12px;
+            border: 2px solid var(--border); box-shadow: 0 0 40px rgba(0,0,0,0.3);
+        }
+        @media (max-width: 900px) {
+            .origin-content { grid-template-columns: 1fr; }
+            .origin-video-wrap { order: -1; }
+            .origin-excelsior { font-size: 1.8rem; }
+        }
+
         /* ── HOW IT WORKS (LOOP DIAGRAM) ────────────────── */
         .loop-section { background: var(--bg-secondary); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); max-width: 100%; padding: 5rem 2rem; }
         .loop-inner { max-width: 1100px; margin: 0 auto; }
@@ -547,6 +580,10 @@
                 <img src="https://cdn.prod.website-files.com/69082c5061a39922df8ed3b6/698de9d051aaed1a235ebf79_milton.png" alt="milton.bot">
                 <span class="social-tooltip">milton.bot</span>
             </a>
+            <a class="social-btn" href="https://github.com" target="_blank" title="GitHub">
+                <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg" alt="GitHub" style="filter:invert(0.7) brightness(1.2);">
+                <span class="social-tooltip">github</span>
+            </a>
             <a class="social-btn" href="https://x.com/miltondotbot" target="_blank" title="Twitter">
                 <img src="https://cdn.prod.website-files.com/69082c5061a39922df8ed3b6/69093cba0db485064d0267ca_68d5c1872568958fd78018bb_twitter.png" alt="Twitter">
                 <span class="social-tooltip">twitter</span>
@@ -565,6 +602,7 @@
         <nav>
             <div class="nav-logo"><img src="https://cdn.prod.website-files.com/69082c5061a39922df8ed3b6/698de9d051aaed1a235ebf79_milton.png" alt="Milton">milton<span class="loop-symbol">loop</span><span>()</span></div>
             <div class="nav-links">
+                <a href="#origin">Origin</a>
                 <a href="#loop">The Loop</a>
                 <a href="#live">Live</a>
                 <a href="#dashboard">Training</a>
@@ -635,6 +673,29 @@
                 LOOP RUNNING FOR: <span class="time-val" id="uptime-display">--</span>
             </div>
         </section>
+
+        <!-- WHO IS MILTON -->
+        <div class="origin-section" id="origin">
+            <div class="origin-inner">
+                <div class="section-label">// Origin Story</div>
+                <h2 class="section-title">Who is Milton?</h2>
+                <div class="origin-content">
+                    <div class="origin-text">
+                        <p>Milton is a character from <strong style="color:var(--text-primary)">The Simpsons</strong> — a chess-obsessed nerd who hides in the basement of Springfield Elementary with Martin Prince and his friends in a secret room called the <strong style="color:var(--accent3)">"Refuge of the Damned"</strong>.</p>
+                        <div class="origin-quote">
+                            "A place where we can work on extra credit assignments without fear of reprisal."
+                            <span>— Martin Prince</span>
+                        </div>
+                        <p>Not unlike a Mac Mini M4 tucked away in a corner, quietly running an infinite chess training loop with zero human oversight. No one bothers Milton. No one interrupts the loop. He just sits there, plays chess, and gets stronger.</p>
+                        <p>Milton just wants to play chess. So does this engine. The difference is <strong style="color:var(--text-primary)">Milton Loop never stops playing.</strong></p>
+                        <div class="origin-excelsior">EXCELSIOR!!!</div>
+                    </div>
+                    <div class="origin-video-wrap">
+                        <video src="https://res.cloudinary.com/do48jszgn/video/upload/v1770908680/milton4_jenotc.mp4" playsinline preload="metadata" controls controlslist="nodownload noplaybackrate" disablepictureinpicture></video>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- THE LOOP -->
         <div class="loop-section" id="loop">
@@ -1048,12 +1109,7 @@
                 </div>
                 <div class="faq-item">
                     <div class="faq-question"><span>Why "Milton"?</span><span class="faq-arrow">&#9660;</span></div>
-                    <div class="faq-answer">
-                        <p>Named after Milton from <em>The Simpsons</em> — a chess-obsessed nerd who hides in the basement of Springfield Elementary with Martin Prince and his friends in a secret room called the <strong>"Refuge of the Damned"</strong>. Martin describes it as a place where they can "work on extra credit assignments without fear of reprisal" — not unlike a Mac Mini tucked away in a corner, quietly running an infinite chess training loop with zero human oversight.</p>
-                        <p>Milton just wants to play chess. So does this engine. The difference is Milton Loop never stops playing.</p>
-                        <p style="font-family:var(--font-mono);color:var(--accent);font-weight:700;font-size:1.1rem;margin-top:1rem;letter-spacing:0.05em;">EXCELSIOR!!!</p>
-                        <video src="https://res.cloudinary.com/do48jszgn/video/upload/v1770908680/milton4_jenotc.mp4" playsinline preload="metadata" controls controlslist="nodownload noplaybackrate" disablepictureinpicture style="width:100%;max-width:500px;border-radius:8px;margin-top:1rem;border:1px solid var(--border);"></video>
-                    </div>
+                    <div class="faq-answer"><p>Named after Milton from The Simpsons — a chess-obsessed nerd hiding in the "Refuge of the Damned" beneath Springfield Elementary. Milton just wants to play chess. So does this engine. The difference is Milton Loop never stops. <a href="#origin">Read the full origin story.</a></p></div>
                 </div>
             </div>
         </section>
@@ -1689,7 +1745,7 @@
         const obs = new IntersectionObserver(entries => {
             entries.forEach(e => { if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='translateY(0)';} });
         }, {threshold:0.1});
-        document.querySelectorAll('section:not(.hero), .live-game-section, .loop-section, #heatmap-section, #openings').forEach(s => {
+        document.querySelectorAll('section:not(.hero), .live-game-section, .loop-section, .origin-section, #heatmap-section, #openings').forEach(s => {
             s.style.opacity='0'; s.style.transform='translateY(30px)'; s.style.transition='opacity 0.6s ease, transform 0.6s ease';
             obs.observe(s);
         });
