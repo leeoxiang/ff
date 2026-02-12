@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Milton Loop — Recursive Self-Learning Chess Engine</title>
+    <link rel="icon" type="image/png" href="https://cdn.prod.website-files.com/69082c5061a39922df8ed3b6/698de9d051aaed1a235ebf79_milton.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -93,7 +94,8 @@
             z-index: 100;
         }
 
-        .nav-logo { font-family: var(--font-mono); font-weight: 700; font-size: 0.95rem; color: var(--accent); }
+        .nav-logo { font-family: var(--font-mono); font-weight: 700; font-size: 0.95rem; color: var(--accent); display: flex; align-items: center; gap: 0.5rem; }
+        .nav-logo img { width: 24px; height: 24px; border-radius: 4px; }
         .nav-logo span { color: var(--text-muted); }
         .nav-logo .loop-symbol { color: var(--accent3); }
 
@@ -565,7 +567,7 @@
 
         <!-- NAV -->
         <nav>
-            <div class="nav-logo">milton<span class="loop-symbol">loop</span><span>()</span></div>
+            <div class="nav-logo"><img src="https://cdn.prod.website-files.com/69082c5061a39922df8ed3b6/698de9d051aaed1a235ebf79_milton.png" alt="Milton">milton<span class="loop-symbol">loop</span><span>()</span></div>
             <div class="nav-links">
                 <a href="#loop">The Loop</a>
                 <a href="#live">Live</a>
