@@ -420,6 +420,25 @@
         .faq-item.open .faq-answer { max-height: 500px; padding: 0 1.5rem 1.2rem; }
         .faq-answer p { color: var(--text-secondary); font-size: 0.9rem; }
 
+        /* ── DEV ADDRESS ────────────────────────────────── */
+        .dev-address-bar {
+            max-width: 1100px; margin: 0 auto 0;
+            display: flex; align-items: center; justify-content: center; gap: 0.75rem;
+            padding: 1rem 1.5rem;
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+            font-family: var(--font-mono); font-size: 0.78rem;
+            margin-left: auto; margin-right: auto;
+            width: fit-content;
+        }
+        .dev-label { color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }
+        .dev-addr { color: var(--accent); word-break: break-all; user-select: all; }
+        .dev-copy {
+            background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px;
+            color: var(--text-muted); font-size: 0.85rem; padding: 0.3rem 0.55rem;
+            cursor: pointer; transition: all 0.2s; line-height: 1; font-family: var(--font-mono);
+        }
+        .dev-copy:hover { border-color: var(--accent); color: var(--accent); }
+
         /* ── FOOTER ──────────────────────────────────────── */
         footer { border-top: 1px solid var(--border); padding: 3rem 2rem; }
         .footer-content { max-width: 1100px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
@@ -1114,6 +1133,13 @@
             </div>
         </section>
 
+        <!-- DEV ADDRESS -->
+        <div class="dev-address-bar">
+            <span class="dev-label">Dev address:</span>
+            <span class="dev-addr" id="dev-addr">soon</span>
+            <button class="dev-copy" onclick="copyAddr()" id="dev-copy-btn" title="Copy">&#9112;</button>
+        </div>
+
         <!-- FOOTER -->
         <footer>
             <div class="footer-content">
@@ -1719,6 +1745,18 @@
                 for (let i=0;i<64;i++) html += `<div class="heatmap-cell" style="background:rgba(0,30,15,0.3)"></div>`;
                 grid.innerHTML = html;
             }
+        }
+
+        // ── DEV ADDRESS COPY ────────────────────────────────
+        function copyAddr() {
+            const addr = document.getElementById('dev-addr').textContent;
+            navigator.clipboard.writeText(addr).then(() => {
+                const btn = document.getElementById('dev-copy-btn');
+                btn.textContent = '✓';
+                btn.style.color = 'var(--accent)';
+                btn.style.borderColor = 'var(--accent)';
+                setTimeout(() => { btn.innerHTML = '&#9112;'; btn.style.color = ''; btn.style.borderColor = ''; }, 1500);
+            });
         }
 
         // ── CODE TABS ───────────────────────────────────────
