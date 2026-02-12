@@ -1162,7 +1162,7 @@
                 const wins = p.count?.win||0;
                 const wr = total>0 ? Math.round(wins/total*100) : 0;
 
-                document.getElementById('stat-elo').textContent = elo + (isProvisional ? '?' : '');
+                document.getElementById('stat-elo').textContent = elo;
                 document.getElementById('stat-games').textContent = total.toLocaleString();
                 document.getElementById('stat-winrate').textContent = total>0 ? wr+'%' : '--';
 
@@ -1170,7 +1170,7 @@
                 const eloNum = typeof elo === 'number' ? elo : 0;
                 const pct = Math.min(100, Math.max(0, eloNum/2500*100));
                 document.getElementById('elo-bar').style.width = pct+'%';
-                document.getElementById('elo-marker').textContent = elo + (isProvisional ? ' (provisional)' : '');
+                document.getElementById('elo-marker').textContent = elo;
 
                 // Online status
                 if (p.online) {
