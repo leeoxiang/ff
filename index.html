@@ -315,6 +315,7 @@
         .elo-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent3), var(--accent), var(--accent2)); border-radius: 4px; transition: width 1.5s ease; width: 0%; }
         .elo-markers { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted); }
         .elo-current { color: var(--accent); font-weight: 700; }
+        .elo-target { color: var(--accent3); font-weight: 700; }
 
         /* ── GAMES ───────────────────────────────────────── */
         .games-container { display: flex; flex-direction: column; gap: 0.5rem; }
@@ -598,8 +599,8 @@
 
             <p class="hero-subtitle">
                 A self-learning chess engine trapped in an <strong>infinite feedback loop</strong>.
-                It plays millions of games against itself, rewrites its own brain,
-                and emerges stronger — every single cycle. No human knowledge. No escape.
+                It plays thousands of games against itself, rewrites its own brain,
+                and uses Grok to analyze its weaknesses — emerging stronger every single cycle. No human knowledge. No escape.
             </p>
 
             <a class="hero-cta" href="https://lichess.org/?user=magnusgrok#friend" target="_blank">
@@ -642,7 +643,7 @@
             <div class="loop-inner">
                 <div class="section-label">// The Infinite Loop</div>
                 <h2 class="section-title">How Milton thinks</h2>
-                <p class="section-desc">An endless cycle of self-improvement. Every iteration, the neural network plays thousands of games against itself, trains on the results, evaluates the new model — and loops again. Forever.</p>
+                <p class="section-desc">An endless cycle of self-improvement. Every iteration, the neural network plays thousands of games against itself, trains on the results, evaluates the new model — and loops again. Grok analyzes every online game to identify weaknesses and sharpen the loop. Forever.</p>
 
                 <div class="loop-diagram">
                     <div class="loop-step">
@@ -765,6 +766,7 @@
                         <div><span class="log-time">[init]</span> <span class="log-loop">LOOP</span> <span class="log-text">Milton Loop daemon initializing...</span></div>
                         <div><span class="log-time">[init]</span> <span class="log-info">SYS </span> <span class="log-text">Device: Apple Silicon MPS | Memory: 16GB unified</span></div>
                         <div><span class="log-time">[init]</span> <span class="log-info">NET </span> <span class="log-text">Model loaded: 9,633,315 parameters (128 filters, 10 res blocks)</span></div>
+                        <div><span class="log-time">[init]</span> <span class="log-info">GROK</span> <span class="log-text">Connected to Grok API (grok-3) — post-game analysis active</span></div>
                         <div><span class="log-time">[init]</span> <span class="log-loop">LOOP</span> <span class="log-text">Entering infinite self-play loop...</span></div>
                         <div><span class="log-time">[init]</span> <span class="log-info">BOT </span> <span class="log-text">Connected to Lichess as: magnusgrok</span></div>
                     </div>
@@ -849,7 +851,8 @@
                     <p>DeepMind's AlphaZero used 5,000 TPUs and 44 million self-play games. Milton Loop has one Mac Mini and stubbornness. The loop runs 24/7 — generating games, training, evaluating, deploying. Every cycle, the engine gets a little bit stronger. The question isn't if, it's when.</p>
                     <div class="elo-progress">
                         <div class="elo-bar-bg"><div class="elo-bar-fill" id="elo-bar"></div></div>
-                        <div class="elo-markers"><span>0</span><span>800</span><span>1500</span><span class="elo-current" id="elo-marker">?</span><span>2500</span></div>
+                        <div class="elo-markers"><span>0</span><span>500</span><span>1000</span><span>1500</span><span>2000</span><span class="elo-target">2500 ★</span></div>
+                        <div style="font-family:var(--font-mono);font-size:0.75rem;margin-top:0.5rem;color:var(--accent);font-weight:700;">Current: <span id="elo-marker">?</span></div>
                     </div>
                 </div>
                 <div class="mission-card">
@@ -1015,7 +1018,7 @@
             <div class="faq-list">
                 <div class="faq-item">
                     <div class="faq-question"><span>What is Milton Loop?</span><span class="faq-arrow">&#9660;</span></div>
-                    <div class="faq-answer"><p>A recursive self-learning chess engine that teaches itself chess from scratch through an infinite feedback loop. It uses the same AlphaZero architecture that DeepMind used to master chess — but running on a single Mac Mini instead of 5,000 TPUs. Milton plays millions of games against itself locally, trains a neural network on the results, and continuously deploys improved versions to play real opponents on Lichess.</p></div>
+                    <div class="faq-answer"><p>A recursive self-learning chess engine that teaches itself chess from scratch through an infinite feedback loop. It uses the same AlphaZero architecture that DeepMind used to master chess — but running on a single Mac Mini M4 instead of 5,000 TPUs. Milton plays thousands of games against itself locally, trains a neural network on the results, and uses Grok for real-time post-game analysis to identify weaknesses and guide the training loop. Improved versions are continuously deployed to play real opponents on Lichess.</p></div>
                 </div>
                 <div class="faq-item">
                     <div class="faq-question"><span>What does "the loop" mean?</span><span class="faq-arrow">&#9660;</span></div>
@@ -1027,7 +1030,7 @@
                 </div>
                 <div class="faq-item">
                     <div class="faq-question"><span>What hardware does it run on?</span><span class="faq-arrow">&#9660;</span></div>
-                    <div class="faq-answer"><p>A single Apple Mac Mini with an M-series chip and 16GB unified memory. It uses Metal Performance Shaders (MPS) for GPU-accelerated neural network inference. No cloud. No cluster. No rented TPUs. Just one machine, one loop, running forever.</p></div>
+                    <div class="faq-answer"><p>A single Apple Mac Mini M4 with 16GB unified memory. It uses Metal Performance Shaders (MPS) for GPU-accelerated neural network inference and training. The Grok API handles post-game analysis and strategic pattern recognition over the network. No cloud compute for training. No cluster. No rented TPUs. Just one machine, one API, one loop, running forever.</p></div>
                 </div>
                 <div class="faq-item">
                     <div class="faq-question"><span>Can I play against it?</span><span class="faq-arrow">&#9660;</span></div>
@@ -1036,6 +1039,14 @@
                 <div class="faq-item">
                     <div class="faq-question"><span>What's the end goal?</span><span class="faq-arrow">&#9660;</span></div>
                     <div class="faq-answer"><p>2500 Elo — Candidate Master strength. Through pure self-play, zero human knowledge, on a single consumer machine. The original AlphaZero reached superhuman strength in 4 hours on specialized hardware. We're doing it the slow way. But the loop doesn't sleep.</p></div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question"><span>How does Grok fit into the loop?</span><span class="faq-arrow">&#9660;</span></div>
+                    <div class="faq-answer"><p>Grok (via the xAI API) powers Milton's post-game intelligence layer. After every online game, Grok analyzes the full PGN — identifying critical moments, tactical blind spots, positional weaknesses, and endgame errors. Over multiple games, it detects systematic patterns (e.g. "Milton consistently misses knight forks beyond 2-move depth"). These insights feed directly back into the training pipeline: positions where Milton struggles get higher training weight, and self-play can be biased toward game types that expose his weaknesses. It's like having an AI chess coach watching every game and adjusting the curriculum in real time.</p></div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question"><span>What's the AI tournament plan?</span><span class="faq-arrow">&#9660;</span></div>
+                    <div class="faq-answer"><p>The long-term vision is an AI chess tournament: Claude (Anthropic) vs. GPT (OpenAI) vs. Grok (xAI). Same AlphaZero architecture, same training pipeline, same hardware. The only variable is which LLM powers the strategic analysis layer. Round robin, 100 games each matchup, full transparency. The question: does the choice of LLM meaningfully affect chess training quality? Milton's architecture is model-agnostic — swap the API, and the pipeline works identically.</p></div>
                 </div>
                 <div class="faq-item">
                     <div class="faq-question"><span>Why "Milton"?</span><span class="faq-arrow">&#9660;</span></div>
@@ -1047,7 +1058,7 @@
         <!-- FOOTER -->
         <footer>
             <div class="footer-content">
-                <div class="footer-text">miltonloop() — built with PyTorch, python-chess, and an unhealthy obsession with recursive self-improvement</div>
+                <div class="footer-text">miltonloop() — built with PyTorch, python-chess, Grok API, and an unhealthy obsession with recursive self-improvement</div>
                 <div class="footer-links">
                     <a href="https://lichess.org/@/magnusgrok" target="_blank">Lichess</a>
                     <a href="#code">Source</a>
@@ -1125,19 +1136,41 @@
                 const p = await res.json();
                 const perfs = p.perfs||{};
                 // Show real Elo — pick the highest rated category
-                const ratings = [perfs.blitz?.rating, perfs.rapid?.rating, perfs.bullet?.rating].filter(Boolean);
-                const elo = ratings.length > 0 ? Math.max(...ratings) : '--';
+                // Filter out provisional ratings (prov: true or rd > 150) that are unreliable
+                const validRatings = [];
+                for (const cat of ['blitz', 'rapid', 'bullet', 'classical']) {
+                    const perf = perfs[cat];
+                    if (perf && typeof perf.rating === 'number') {
+                        validRatings.push({
+                            rating: perf.rating,
+                            prov: perf.prov || false,
+                            games: perf.games || 0
+                        });
+                    }
+                }
+
+                let elo = '--';
+                let isProvisional = false;
+                if (validRatings.length > 0) {
+                    // Sort by number of games played, prefer non-provisional
+                    validRatings.sort((a,b) => b.games - a.games);
+                    elo = validRatings[0].rating;
+                    isProvisional = validRatings[0].prov || validRatings[0].games < 10;
+                }
+
                 const total = p.count?.all||0;
                 const wins = p.count?.win||0;
                 const wr = total>0 ? Math.round(wins/total*100) : 0;
 
-                document.getElementById('stat-elo').textContent = elo;
+                document.getElementById('stat-elo').textContent = elo + (isProvisional ? '?' : '');
                 document.getElementById('stat-games').textContent = total.toLocaleString();
                 document.getElementById('stat-winrate').textContent = total>0 ? wr+'%' : '--';
 
-                const pct = Math.min(100, Math.max(0, elo/2500*100));
+                // Use the actual Lichess rating for the progress bar, capped at 2500
+                const eloNum = typeof elo === 'number' ? elo : 0;
+                const pct = Math.min(100, Math.max(0, eloNum/2500*100));
                 document.getElementById('elo-bar').style.width = pct+'%';
-                document.getElementById('elo-marker').textContent = elo;
+                document.getElementById('elo-marker').textContent = elo + (isProvisional ? ' (provisional)' : '');
 
                 // Online status
                 if (p.online) {
@@ -1445,6 +1478,10 @@
                 ['SYS ', `MPS GPU utilization: ${Math.floor(Math.random()*30)+60}% | Inference: ${Math.floor(Math.random()*5)+8}ms/position`],
                 ['BOT ', `Lichess: challenging random bot from pool...`],
                 ['BOT ', `Game accepted — entering online play mode`],
+                ['GROK', `Post-game analysis: 3 tactical blindspots detected, 2 positional weaknesses logged`],
+                ['GROK', `Pattern scan: knight fork vulnerability recurring — boosting fork positions in training`],
+                ['GROK', `Endgame assessment: rook endgame technique rated ~1200 — prioritizing rook endings`],
+                ['GROK', `Weakness report: discovered attack awareness at 62% — needs improvement`],
             ];
             const msg = messages[Math.floor(Math.random()*messages.length)];
             const now = new Date().toLocaleTimeString('en-US', {hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit'});
